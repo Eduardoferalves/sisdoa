@@ -28,7 +28,7 @@ class DonationItem(Base):
     quantity: Mapped[int] = Column(Integer, nullable=False, default=0)
     expiration_date: Mapped[date] = Column(Date, nullable=False)
     created_at: Mapped[datetime] = Column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),  # noqa: UP017
     )

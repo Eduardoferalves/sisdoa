@@ -6,6 +6,7 @@ from datetime import date
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from sisdoa.config import DATABASE_URL
 from sisdoa.domain.models import Base, DonationItem
@@ -24,13 +25,21 @@ class Database:
         Args:
             db_url: SQLAlchemy database URL. Defaults to SQLite file.
         """
-        self.engine = create_engine(db_url, echo=False)
+        engine_kwargs = {}
+        if db_url.startswith("sqlite"):
+            engine_kwargs["connect_args"] = {"check_same_thread": False}
+        elif db_url.startswith("postgresql"):
+            engine_kwargs["poolclass"] = NullPool
+            engine_kwargs["pool_pre_ping"] = True
+
+        self.engine = create_engine(db_url, echo=False, **engine_kwargs)
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
         self._create_tables()
 
     def _create_tables(self) -> None:
         """Create all tables if they don't exist."""
-        Base.metadata.create_all(bind=self.engine)
+        if self.engine.dialect.name == "sqlite":
+            Base.metadata.create_all(bind=self.engine)
 
     def get_session(self) -> Session:
         """Get a new database session.
