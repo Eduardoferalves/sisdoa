@@ -8,6 +8,12 @@ from sqlalchemy.orm import Session
 
 from sisdoa.api.deps import get_db
 from sisdoa.api.schemas import DonationItemCreate, DonationItemResponse
+from sisdoa.domain.interfaces import DonationItemRepositoryInterface, ProductGatewayInterface
+from sisdoa.domain.use_cases import (
+    ListDonationsUseCase,
+    ListExpiredDonationsUseCase,
+    RegisterDonationUseCase,
+)
 from sisdoa.infrastructure.api_gateway import (
     OpenFoodFactsGateway,
     ProductFetchError,
@@ -27,10 +33,42 @@ app.add_middleware(
 )
 
 
+def get_repository(db: Annotated[Session, Depends(get_db)]) -> DonationItemRepositoryInterface:
+    """Get repository dependency."""
+    return DonationItemRepository(db)
+
+
+def get_gateway() -> ProductGatewayInterface:
+    """Get gateway dependency."""
+    return OpenFoodFactsGateway()
+
+
+def get_list_donations_use_case(
+    repo: Annotated[DonationItemRepositoryInterface, Depends(get_repository)],
+) -> ListDonationsUseCase:
+    """Get ListDonationsUseCase dependency."""
+    return ListDonationsUseCase(repo)
+
+
+def get_register_donation_use_case(
+    repo: Annotated[DonationItemRepositoryInterface, Depends(get_repository)],
+    gateway: Annotated[ProductGatewayInterface, Depends(get_gateway)],
+) -> RegisterDonationUseCase:
+    """Get RegisterDonationUseCase dependency."""
+    return RegisterDonationUseCase(repo, gateway)
+
+
+def get_list_expired_donations_use_case(
+    repo: Annotated[DonationItemRepositoryInterface, Depends(get_repository)],
+) -> ListExpiredDonationsUseCase:
+    """Get ListExpiredDonationsUseCase dependency."""
+    return ListExpiredDonationsUseCase(repo)
+
+
 @app.post("/donations/", response_model=DonationItemResponse, status_code=status.HTTP_201_CREATED)
 def create_donation(
     payload: DonationItemCreate,
-    db: Annotated[Session, Depends(get_db)],
+    use_case: Annotated[RegisterDonationUseCase, Depends(get_register_donation_use_case)],
     ean: Annotated[
         str | None, Query(description="Código de barras opcional para buscar o nome do produto")
     ] = None,
@@ -39,42 +77,34 @@ def create_donation(
 
     If query parameter 'ean' is provided, fetches the product name from OpenFoodFacts.
     """
-    if ean:
-        gateway = OpenFoodFactsGateway()
-        try:
-            product_name = gateway.fetch_product_name(ean)
-        except ProductNotFoundError as e:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-        except ProductFetchError as e:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)
-            ) from e
-    else:
-        if not payload.name:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="O campo 'name' é obrigatório quando 'ean' não é fornecido.",
-            )
-        product_name = payload.name
+    try:
+        item = use_case.execute(
+            ean=ean,
+            name=payload.name,
+            quantity=payload.quantity,
+            expiration_date=payload.expiration_date,
+        )
+    except ProductNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except ProductFetchError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
-    repo = DonationItemRepository(db)
-    item = repo.create(
-        name=product_name,
-        quantity=payload.quantity,
-        expiration_date=payload.expiration_date,
-    )
     return item
 
 
 @app.get("/donations/", response_model=list[DonationItemResponse])
-def list_donations(db: Annotated[Session, Depends(get_db)]) -> list[DonationItemResponse]:
+def list_donations(
+    use_case: Annotated[ListDonationsUseCase, Depends(get_list_donations_use_case)],
+) -> list[DonationItemResponse]:
     """Retrieve all donation items."""
-    repo = DonationItemRepository(db)
-    return repo.get_all()
+    return use_case.execute()
 
 
 @app.get("/donations/expired", response_model=list[DonationItemResponse])
-def list_expired_donations(db: Annotated[Session, Depends(get_db)]) -> list[DonationItemResponse]:
+def list_expired_donations(
+    use_case: Annotated[ListExpiredDonationsUseCase, Depends(get_list_expired_donations_use_case)],
+) -> list[DonationItemResponse]:
     """Retrieve all expired donation items."""
-    repo = DonationItemRepository(db)
-    return repo.get_expired()
+    return use_case.execute()

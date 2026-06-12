@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import httpx
 
+from sisdoa.domain.interfaces import ProductGatewayInterface
+
 
 class ProductNotFoundError(Exception):
     """Raised when a product is not found in the API."""
@@ -20,7 +22,7 @@ class ProductFetchError(Exception):
         super().__init__(message)
 
 
-class OpenFoodFactsGateway:
+class OpenFoodFactsGateway(ProductGatewayInterface):
     """Gateway for Open Food Facts API integration.
 
     This class provides methods to fetch product information from the
@@ -30,7 +32,7 @@ class OpenFoodFactsGateway:
     """
 
     BASE_URL = "https://world.openfoodfacts.org/api/v2/product"
-    TIMEOUT_SECONDS = 10
+    TIMEOUT_SECONDS = 5.0
 
     def __init__(self, client: httpx.Client | None = None) -> None:
         """Initialize the gateway with an optional HTTP client.
