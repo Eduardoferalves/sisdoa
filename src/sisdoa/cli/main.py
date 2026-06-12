@@ -41,7 +41,8 @@ def get_repository() -> DonationItemRepository:
         DonationItemRepository with database connection.
     """
     db = Database()
-    return DonationItemRepository(db)
+    session = db.get_session()
+    return DonationItemRepository(session)
 
 
 @app.command("add")

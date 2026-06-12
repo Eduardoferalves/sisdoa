@@ -6,6 +6,9 @@ Tests using these fixtures will NOT touch the disk or affect production data.
 
 from __future__ import annotations
 
+import os
+import tempfile
+from collections.abc import Generator
 from datetime import date, timedelta
 
 import pytest
@@ -15,13 +18,20 @@ from sisdoa.repository.database import Database, DonationItemRepository
 
 
 @pytest.fixture
-def in_memory_db_url() -> str:
-    """Provide in-memory SQLite URL for tests.
+def in_memory_db_url() -> Generator[str, None, None]:
+    """Provide temporary SQLite URL for tests.
 
-    Returns:
-        SQLite in-memory connection string.
+    Yields:
+        SQLite temp file connection string.
     """
-    return "sqlite:///:memory:"
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    yield f"sqlite:///{path}"
+    try:
+        if os.path.exists(path):
+            os.remove(path)
+    except OSError:
+        pass
 
 
 @pytest.fixture
@@ -40,7 +50,7 @@ def test_repo(test_db: Database) -> DonationItemRepository:
 
     Returns a repository connected to in-memory database.
     """
-    return DonationItemRepository(test_db)
+    return DonationItemRepository(test_db.get_session())
 
 
 @pytest.fixture

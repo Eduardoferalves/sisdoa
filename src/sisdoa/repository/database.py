@@ -57,13 +57,13 @@ class DonationItemRepository:
     to donation items, keeping the CLI layer free of DB logic.
     """
 
-    def __init__(self, db: Database) -> None:
-        """Initialize repository with database connection.
+    def __init__(self, session: Session) -> None:
+        """Initialize repository with database session.
 
         Args:
-            db: Database instance for connection management.
+            session: SQLAlchemy session instance.
         """
-        self.db = db
+        self.session = session
 
     def create(self, name: str, quantity: int, expiration_date: date) -> DonationItem:
         """Create a new donation item.
@@ -76,19 +76,15 @@ class DonationItemRepository:
         Returns:
             The newly created DonationItem.
         """
-        session = self.db.get_session()
-        try:
-            item = DonationItem(
-                name=name,
-                quantity=quantity,
-                expiration_date=expiration_date,
-            )
-            session.add(item)
-            session.commit()
-            session.refresh(item)
-            return item
-        finally:
-            session.close()
+        item = DonationItem(
+            name=name,
+            quantity=quantity,
+            expiration_date=expiration_date,
+        )
+        self.session.add(item)
+        self.session.commit()
+        self.session.refresh(item)
+        return item
 
     def get_by_id(self, item_id: int) -> DonationItem | None:
         """Get a donation item by ID.
@@ -99,12 +95,8 @@ class DonationItemRepository:
         Returns:
             DonationItem if found, None otherwise.
         """
-        session = self.db.get_session()
-        try:
-            stmt = select(DonationItem).where(DonationItem.id == item_id)
-            return session.execute(stmt).scalar_one_or_none()
-        finally:
-            session.close()
+        stmt = select(DonationItem).where(DonationItem.id == item_id)
+        return self.session.execute(stmt).scalar_one_or_none()
 
     def get_all(self) -> list[DonationItem]:
         """Get all donation items.
@@ -112,12 +104,8 @@ class DonationItemRepository:
         Returns:
             List of all DonationItem records.
         """
-        session = self.db.get_session()
-        try:
-            stmt = select(DonationItem).order_by(DonationItem.expiration_date)
-            return list(session.execute(stmt).scalars().all())
-        finally:
-            session.close()
+        stmt = select(DonationItem).order_by(DonationItem.expiration_date)
+        return list(self.session.execute(stmt).scalars().all())
 
     def get_near_expiration(self, threshold_days: int = 7) -> list[DonationItem]:
         """Get items near their expiration date.
@@ -128,13 +116,9 @@ class DonationItemRepository:
         Returns:
             List of DonationItem records expiring within threshold.
         """
-        session = self.db.get_session()
-        try:
-            stmt = select(DonationItem).order_by(DonationItem.expiration_date)
-            items = session.execute(stmt).scalars().all()
-            return [item for item in items if item.days_until_expiration() <= threshold_days]
-        finally:
-            session.close()
+        stmt = select(DonationItem).order_by(DonationItem.expiration_date)
+        items = self.session.execute(stmt).scalars().all()
+        return [item for item in items if item.days_until_expiration() <= threshold_days]
 
     def update_quantity(self, item_id: int, quantity_delta: int) -> DonationItem | None:
         """Update item quantity (add or remove).
@@ -149,26 +133,22 @@ class DonationItemRepository:
         Raises:
             ValueError: If resulting quantity would be negative.
         """
-        session = self.db.get_session()
-        try:
-            stmt = select(DonationItem).where(DonationItem.id == item_id)
-            item = session.execute(stmt).scalar_one_or_none()
-            if item is None:
-                return None
+        stmt = select(DonationItem).where(DonationItem.id == item_id)
+        item = self.session.execute(stmt).scalar_one_or_none()
+        if item is None:
+            return None
 
-            new_quantity = item.quantity + quantity_delta
-            if new_quantity < 0:
-                raise ValueError(
-                    f"Insufficient stock: cannot remove {abs(quantity_delta)} units "
-                    f"from item with {item.quantity} units"
-                )
+        new_quantity = item.quantity + quantity_delta
+        if new_quantity < 0:
+            raise ValueError(
+                f"Insufficient stock: cannot remove {abs(quantity_delta)} units "
+                f"from item with {item.quantity} units"
+            )
 
-            item.quantity = new_quantity
-            session.commit()
-            session.refresh(item)
-            return item
-        finally:
-            session.close()
+        item.quantity = new_quantity
+        self.session.commit()
+        self.session.refresh(item)
+        return item
 
     def delete(self, item_id: int) -> bool:
         """Delete a donation item.
@@ -179,17 +159,13 @@ class DonationItemRepository:
         Returns:
             True if item was deleted, False if not found.
         """
-        session = self.db.get_session()
-        try:
-            item = self.get_by_id(item_id)
-            if item is None:
-                return False
+        item = self.get_by_id(item_id)
+        if item is None:
+            return False
 
-            session.delete(item)
-            session.commit()
-            return True
-        finally:
-            session.close()
+        self.session.delete(item)
+        self.session.commit()
+        return True
 
     def get_expired(self) -> list[DonationItem]:
         """Get all expired items.
@@ -197,10 +173,6 @@ class DonationItemRepository:
         Returns:
             List of DonationItem records that have already expired.
         """
-        session = self.db.get_session()
-        try:
-            stmt = select(DonationItem).order_by(DonationItem.expiration_date)
-            items = session.execute(stmt).scalars().all()
-            return [item for item in items if item.days_until_expiration() < 0]
-        finally:
-            session.close()
+        stmt = select(DonationItem).order_by(DonationItem.expiration_date)
+        items = self.session.execute(stmt).scalars().all()
+        return [item for item in items if item.days_until_expiration() < 0]

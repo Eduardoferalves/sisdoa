@@ -26,7 +26,7 @@ def cli_runner() -> CliRunner:
 def cli_repo(in_memory_db_url: str) -> DonationItemRepository:
     """Create repository for CLI tests with isolated DB."""
     db = Database(in_memory_db_url)
-    return DonationItemRepository(db)
+    return DonationItemRepository(db.get_session())
 
 
 @pytest.fixture
