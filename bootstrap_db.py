@@ -15,6 +15,7 @@ from sisdoa.domain.models import Base  # noqa: E402
 
 console = Console()
 
+
 def main():
     console.print("[bold blue]Iniciando o Bootstrap do banco de dados remoto...[/bold blue]")
 
@@ -25,16 +26,23 @@ def main():
     engine = create_engine(DATABASE_URL)
 
     if engine.dialect.name != "postgresql":
-        console.print(f"[bold red]ERRO CRÍTICO: Execução abortada. O script foi desviado para o fallback local ({engine.url}). Certifique-se de que o arquivo .env real está configurado.[/bold red]")
+        console.print(
+            f"[bold red]ERRO CRÍTICO: Execução abortada. O script foi desviado para o fallback local ({engine.url}). Certifique-se de que o arquivo .env real está configurado.[/bold red]"
+        )
         sys.exit(1)
 
     try:
         console.print("[yellow]Injetando Schema DDL...[/yellow]")
-        console.print(f"[cyan]Rastreamento de Alvo: host={engine.url.host}, database={engine.url.database}[/cyan]")
+        console.print(
+            f"[cyan]Rastreamento de Alvo: host={engine.url.host}, database={engine.url.database}[/cyan]"
+        )
         Base.metadata.create_all(bind=engine)
-        console.print("[bold green]✅ Sucesso! Tabelas injetadas no cluster remoto com perfeição.[/bold green]")
+        console.print(
+            "[bold green]✅ Sucesso! Tabelas injetadas no cluster remoto com perfeição.[/bold green]"
+        )
     except Exception as e:
         console.print(f"[bold red]❌ Erro ao criar o schema DDL: {e}[/bold red]")
+
 
 if __name__ == "__main__":
     main()

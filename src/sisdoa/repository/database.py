@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
 
 from sisdoa.config import DATABASE_URL
+from sisdoa.domain.interfaces import DonationItemRepositoryInterface
 from sisdoa.domain.models import Base, DonationItem
 
 
@@ -28,6 +29,10 @@ class Database:
         engine_kwargs = {}
         if db_url.startswith("sqlite"):
             engine_kwargs["connect_args"] = {"check_same_thread": False}
+            if ":memory:" in db_url:
+                from sqlalchemy.pool import StaticPool
+
+                engine_kwargs["poolclass"] = StaticPool
         elif db_url.startswith("postgresql"):
             engine_kwargs["poolclass"] = NullPool
             engine_kwargs["pool_pre_ping"] = True
@@ -50,7 +55,7 @@ class Database:
         return self.SessionLocal()
 
 
-class DonationItemRepository:
+class DonationItemRepository(DonationItemRepositoryInterface):
     """Repository for DonationItem CRUD operations.
 
     This class encapsulates all database operations related
