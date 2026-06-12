@@ -6,9 +6,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class DonationItemCreate(BaseModel):
-    name: str | None = Field(default=None, description="Item name (optional if EAN is provided via query parameter)")
+    name: str | None = Field(
+        default=None, description="Item name (optional if EAN is provided via query parameter)"
+    )
     quantity: int = Field(..., gt=0, description="Quantity must be greater than 0")
     expiration_date: date = Field(..., description="Expiration date of the item")
+
 
 class DonationItemResponse(BaseModel):
     id: int

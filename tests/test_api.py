@@ -17,6 +17,7 @@ from sisdoa.repository.database import Database
 @pytest.fixture
 def client(test_db: Database) -> TestClient:
     """Create a TestClient with dependency override for get_db."""
+
     def override_get_db():
         session = test_db.get_session()
         try:
@@ -58,7 +59,9 @@ class TestCreateDonation:
         assert "name" in response.json()["detail"]
 
     @patch("sisdoa.infrastructure.api_gateway.OpenFoodFactsGateway.fetch_product_name")
-    def test_create_donation_with_ean_success(self, mock_fetch_name: patch, client: TestClient) -> None:
+    def test_create_donation_with_ean_success(
+        self, mock_fetch_name: patch, client: TestClient
+    ) -> None:
         """Create donation item using EAN to fetch product name."""
         mock_fetch_name.return_value = "Feijão Preto 1kg"
         payload = {
@@ -72,7 +75,9 @@ class TestCreateDonation:
         mock_fetch_name.assert_called_once_with("7891010101010")
 
     @patch("sisdoa.infrastructure.api_gateway.OpenFoodFactsGateway.fetch_product_name")
-    def test_create_donation_with_ean_not_found(self, mock_fetch_name: patch, client: TestClient) -> None:
+    def test_create_donation_with_ean_not_found(
+        self, mock_fetch_name: patch, client: TestClient
+    ) -> None:
         """Create donation item with EAN that is not found (404)."""
         mock_fetch_name.side_effect = ProductNotFoundError("1111111111111")
         payload = {
@@ -84,7 +89,9 @@ class TestCreateDonation:
         assert "não foi encontrado" in response.json()["detail"]
 
     @patch("sisdoa.infrastructure.api_gateway.OpenFoodFactsGateway.fetch_product_name")
-    def test_create_donation_with_ean_fetch_error(self, mock_fetch_name: patch, client: TestClient) -> None:
+    def test_create_donation_with_ean_fetch_error(
+        self, mock_fetch_name: patch, client: TestClient
+    ) -> None:
         """Create donation item with EAN that causes a network/timeout error (503)."""
         mock_fetch_name.side_effect = ProductFetchError("Erro de conexão")
         payload = {

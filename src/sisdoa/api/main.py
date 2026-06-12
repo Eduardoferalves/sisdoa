@@ -26,11 +26,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.post("/donations/", response_model=DonationItemResponse, status_code=status.HTTP_201_CREATED)
 def create_donation(
     payload: DonationItemCreate,
     db: Annotated[Session, Depends(get_db)],
-    ean: Annotated[str | None, Query(description="Código de barras opcional para buscar o nome do produto")] = None,
+    ean: Annotated[
+        str | None, Query(description="Código de barras opcional para buscar o nome do produto")
+    ] = None,
 ) -> DonationItemResponse:
     """Create a new donation item.
 
@@ -43,7 +46,9 @@ def create_donation(
         except ProductNotFoundError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
         except ProductFetchError as e:
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)) from e
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)
+            ) from e
     else:
         if not payload.name:
             raise HTTPException(
@@ -60,11 +65,13 @@ def create_donation(
     )
     return item
 
+
 @app.get("/donations/", response_model=list[DonationItemResponse])
 def list_donations(db: Annotated[Session, Depends(get_db)]) -> list[DonationItemResponse]:
     """Retrieve all donation items."""
     repo = DonationItemRepository(db)
     return repo.get_all()
+
 
 @app.get("/donations/expired", response_model=list[DonationItemResponse])
 def list_expired_donations(db: Annotated[Session, Depends(get_db)]) -> list[DonationItemResponse]:
