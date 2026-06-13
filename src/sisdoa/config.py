@@ -17,12 +17,25 @@ DEFAULT_EXPIRY_THRESHOLD_DAYS = 7
 raw_database_url = os.environ.get("DATABASE_URL")
 
 if raw_database_url:
+    import urllib.parse
+    
     if raw_database_url.startswith("postgres://"):
-        DATABASE_URL = raw_database_url.replace("postgres://", "postgresql+psycopg2://", 1)
+        db_url_str = raw_database_url.replace("postgres://", "postgresql+psycopg2://", 1)
     elif raw_database_url.startswith("postgresql://"):
-        DATABASE_URL = raw_database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+        db_url_str = raw_database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
     else:
-        DATABASE_URL = raw_database_url
+        db_url_str = raw_database_url
+        
+    parsed = urllib.parse.urlparse(db_url_str)
+    query_params = urllib.parse.parse_qs(parsed.query)
+    
+    # Remove unsupported parameters for psycopg2
+    query_params.pop("prepared_statements", None)
+    
+    # Rebuild the URL
+    new_query = urllib.parse.urlencode(query_params, doseq=True)
+    parsed = parsed._replace(query=new_query)
+    DATABASE_URL = urllib.parse.urlunparse(parsed)
 else:
     # Get database path from environment or use default
     DB_PATH_ENV = os.environ.get("SISDOA_DB_PATH")
