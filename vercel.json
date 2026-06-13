@@ -2,6 +2,10 @@
   "outputDirectory": "web/dist",
   "rewrites": [
     {
+      "source": "/donations(.*)",
+      "destination": "/api/index.py"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index.py"
     },
