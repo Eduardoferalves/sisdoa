@@ -86,6 +86,9 @@ Rastreabilidade exata dos participantes e de suas atuações técnicas no desenv
 | **Eduardo Fernandes Alves** | 22505804 | Backend, Arquitetura, Integração API e DevOps |
 | **Paulo Henrique Cardoso Rocha** | 22503489 | Frontend, UX/UI e Componentização |
 | **Rafael Torres Teixeira** | 22503930	 | Testes automatizados e GitHub Actions (CI) |
+| **Erick Correia Coelho** | 22504188	 | Revisor de código |
+
+
 
 
 
