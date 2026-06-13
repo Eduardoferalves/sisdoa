@@ -1,0 +1,15 @@
+# Exclude Python project management files so Vercel falls back to requirements.txt
+# instead of trying uv/pyproject.toml which fails in the serverless build environment
+pyproject.toml
+uv.lock
+
+# Development / CI files not needed in production
+.github/
+tests/
+.pytest_results.log
+.pytest_cache/
+Dockerfile
+install.ps1
+bootstrap_db.py
+.agents/
+.antigravity/
