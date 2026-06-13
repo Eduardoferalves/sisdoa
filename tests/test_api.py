@@ -14,22 +14,6 @@ from sisdoa.infrastructure.api_gateway import ProductFetchError, ProductNotFound
 from sisdoa.repository.database import Database
 
 
-@pytest.fixture
-def client(test_db: Database) -> TestClient:
-    """Create a TestClient with dependency override for get_db."""
-
-    def override_get_db():
-        session = test_db.get_session()
-        try:
-            yield session
-        finally:
-            session.close()
-
-    app.dependency_overrides[get_db] = override_get_db
-    yield TestClient(app)
-    app.dependency_overrides.clear()
-
-
 class TestCreateDonation:
     """Test suite for POST /donations/ endpoint."""
 
