@@ -23,10 +23,11 @@ from sisdoa.repository.database import DonationItemRepository
 
 app = FastAPI(title="SisDoa API")
 
-# Configure CORS Middleware
+# Configure CORS Middleware for Local Development
+# Em produção (Vercel), frontend e backend dividem a mesma origem via proxy reverso.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
