@@ -14,7 +14,6 @@ from sisdoa.infrastructure.api_gateway import ProductFetchError, ProductNotFound
 from sisdoa.repository.database import Database
 
 
-
 class TestCreateDonation:
     """Test suite for POST /donations/ endpoint."""
 

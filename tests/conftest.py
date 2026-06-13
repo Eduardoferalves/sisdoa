@@ -12,12 +12,11 @@ from collections.abc import Generator
 from datetime import date, timedelta
 
 import pytest
+from fastapi.testclient import TestClient
 
+from sisdoa.api.main import app, get_repository
 from sisdoa.domain.models import DonationItem
 from sisdoa.repository.database import Database, DonationItemRepository
-from fastapi.testclient import TestClient
-from sisdoa.api.main import app, get_repository
-
 
 
 @pytest.fixture
@@ -143,15 +142,16 @@ def multiple_items(test_repo: DonationItemRepository) -> list[DonationItem]:
 @pytest.fixture
 def client(test_db: Database) -> Generator[TestClient, None, None]:
     """Substitui o repositório real por um injetado com SQLite em memória."""
+
     def _override_get_repository():
         from sisdoa.repository.database import DonationItemRepository
+
         session = test_db.get_session()
         return DonationItemRepository(session)
-        
+
     app.dependency_overrides[get_repository] = _override_get_repository
-    
+
     with TestClient(app) as test_client:
         yield test_client
-        
-    app.dependency_overrides.clear()
 
+    app.dependency_overrides.clear()
